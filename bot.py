@@ -1,4 +1,5 @@
 import os
+import imghdr
 import csv
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Updater, CommandHandler, CallbackContext
@@ -69,3 +70,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
