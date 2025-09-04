@@ -1,5 +1,7 @@
 import os
 import csv
+import threading
+from http.server import BaseHTTPRequestHandler, HTTPServer
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
     ApplicationBuilder,
@@ -57,9 +59,24 @@ async def kontakt(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
         await update.message.reply_text("❌ Nije pronađena firma pod tim imenom.")
 
+# Dummy HTTP server (da Render ne ugasi servis)
+class SimpleHandler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        self.send_response(200)
+        self.end_headers()
+        self.wfile.write(b"Bot is running!")
+
+def run_http_server():
+    port = int(os.environ.get("PORT", 10000))  # Render dodeljuje port
+    server = HTTPServer(("0.0.0.0", port), SimpleHandler)
+    server.serve_forever()
+
 # Glavna funkcija
 def main():
     bot_token = os.getenv("BOT_TOKEN")  # TOKEN iz Render env var
+
+    # pokreni dummy server u pozadini
+    threading.Thread(target=run_http_server, daemon=True).start()
 
     app = ApplicationBuilder().token(bot_token).build()
     app.add_handler(CommandHandler("start", start))
