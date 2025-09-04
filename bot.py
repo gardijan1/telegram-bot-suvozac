@@ -1,7 +1,11 @@
 import os
 import csv
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import Updater, CommandHandler, CallbackContext
+from telegram.ext import (
+    ApplicationBuilder,
+    CommandHandler,
+    ContextTypes
+)
 
 # Učitaj kontakte iz CSV fajla
 def load_contacts():
@@ -16,17 +20,17 @@ def load_contacts():
 contacts = load_contacts()
 
 # /start komanda
-def start(update: Update, context: CallbackContext):
-    update.message.reply_text(
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text(
         "👋 Zdravo! Pošalji komandu:\n\n"
         "/kontakt NazivFirme\n\n"
         "Na primer: /kontakt LogistikaPlus"
     )
 
 # /kontakt komanda
-def kontakt(update: Update, context: CallbackContext):
+async def kontakt(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not context.args:
-        update.message.reply_text("⚠️ Moraš uneti naziv firme. Na primer: /kontakt LogistikaPlus")
+        await update.message.reply_text("⚠️ Moraš uneti naziv firme. Na primer: /kontakt LogistikaPlus")
         return
 
     firma = context.args[0].strip().lower()
@@ -49,25 +53,20 @@ def kontakt(update: Update, context: CallbackContext):
 
         reply_markup = InlineKeyboardMarkup(keyboard)
 
-        update.message.reply_text(poruka, parse_mode="Markdown", reply_markup=reply_markup)
+        await update.message.reply_text(poruka, parse_mode="Markdown", reply_markup=reply_markup)
     else:
-        update.message.reply_text("❌ Nije pronađena firma pod tim imenom.")
+        await update.message.reply_text("❌ Nije pronađena firma pod tim imenom.")
 
 # Glavna funkcija
 def main():
-    bot_token = os.getenv("BOT_TOKEN")  # TOKEN iz okruženja
+    bot_token = os.getenv("BOT_TOKEN")  # TOKEN iz Render env var
 
-    updater = Updater(bot_token, use_context=True)
-    dp = updater.dispatcher
-
-    dp.add_handler(CommandHandler("start", start))
-    dp.add_handler(CommandHandler("kontakt", kontakt))
+    app = ApplicationBuilder().token(bot_token).build()
+    app.add_handler(CommandHandler("start", start))
+    app.add_handler(CommandHandler("kontakt", kontakt))
 
     print("✅ Bot je pokrenut...")
-    updater.start_polling()
-    updater.idle()
+    app.run_polling()
 
 if __name__ == "__main__":
     main()
-
-
