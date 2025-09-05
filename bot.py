@@ -4,6 +4,9 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 
+# Učitavanje iz environment varijable (podesi na Render-u)
+CALL_PAGE_BASE_URL = os.getenv("CALL_PAGE_BASE_URL", "").rstrip("/")
+
 # Učitavanje kontakata iz CSV-a
 contacts = {}
 
@@ -33,7 +36,7 @@ async def lista(update: Update, context: ContextTypes.DEFAULT_TYPE):
     firme = sorted([f.capitalize() for f in contacts.keys()])
     await update.message.reply_text("📋 Lista firmi:\n" + "\n".join(firme))
 
-# /kontakt komanda – sada šalje nativni kontakt + lepu poruku
+# /kontakt komanda
 async def kontakt(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not context.args:
         await update.message.reply_text("⚠️ Moraš uneti naziv firme. Na primer: /kontakt LogistikaPlus")
@@ -59,29 +62,29 @@ async def kontakt(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     break
 
     if kontakt:
-        # Lepo formatirana poruka sa emoji
+        # Vizitka stil poruke
         info_msg = (
+            "╔════════════════════╗\n"
             f"🏢 *{kontakt['ime']} {kontakt['prezime']}*\n"
             f"📞 Telefon: `{kontakt['telefon']}`\n"
-            f"📍 Adresa: {kontakt['adresa']}"
+            f"📍 Adresa: {kontakt['adresa']}\n"
+            "╚════════════════════╝"
         )
 
-        # Slanje nativnog kontakta
-        await context.bot.send_contact(
-            chat_id=update.effective_chat.id,
-            phone_number=kontakt["telefon"],
-            first_name=kontakt["ime"],
-            last_name=kontakt["prezime"]
-        )
-
-        # Inline dugmad
         buttons = []
-        if kontakt.get("google_maps_link", "").startswith(("http://", "https://")):
-            buttons.append([InlineKeyboardButton("🗺️ Otvori lokaciju", url=kontakt["google_maps_link"])])
+
+        # Dugme za poziv (spoljni URL ka tvojoj call stranici)
+        if CALL_PAGE_BASE_URL:
+            call_url = f"{CALL_PAGE_BASE_URL}?num={kontakt['telefon']}"
+            buttons.append([InlineKeyboardButton("📞 Pozovi", url=call_url)])
+
+        # Dugme za Google Maps ako postoji
+        maps_link = kontakt.get("google_maps_link", "")
+        if maps_link.startswith(("http://", "https://")):
+            buttons.append([InlineKeyboardButton("🗺️ Lokacija", url=maps_link)])
 
         reply_markup = InlineKeyboardMarkup(buttons) if buttons else None
 
-        # Slanje dodatne poruke sa lepim formatom
         await update.message.reply_text(info_msg, parse_mode="Markdown", reply_markup=reply_markup)
 
     else:
