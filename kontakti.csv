@@ -1,4 +1,5 @@
 firma,aliasi,ime,prezime,telefon,adresa,google_maps_link
-AveMedia,Ave,Dusan,Rodić,0641086118,https://maps.app.goo.gl/HvJQZMe7F5B2aK6t8
-ProSound,PS,Milan,Milković,0600112388,https://maps.app.goo.gl/xPqhohFXMRf1Thp8A
+AveMedia,Ave,Dusan,Rodić,tel:0641086118,https://maps.app.goo.gl/HvJQZMe7F5B2aK6t8
+ProSound,PS,Milan,Milković,tel:0600112388,https://maps.app.goo.gl/xPqhohFXMRf1Thp8A
+
 
