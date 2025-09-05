@@ -23,17 +23,17 @@ with open("kontakti.csv", newline="", encoding="utf-8") as csvfile:
 # /start komanda
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
-        "👋 Zdravo! Dostupne komande:\n"
-        "/lista – lista svih firmi\n"
-        "/kontakt <naziv> – kontakt podaci firme"
+        "👋 Dobrodošao! Evo šta mogu da uradim:\n"
+        "📋 /lista – lista svih firmi\n"
+        "📞 /kontakt <naziv> – kontakt podaci firme"
     )
 
 # /lista komanda
 async def lista(update: Update, context: ContextTypes.DEFAULT_TYPE):
     firme = sorted([f.capitalize() for f in contacts.keys()])
-    await update.message.reply_text("📋 Firme:\n" + "\n".join(firme))
+    await update.message.reply_text("📋 Lista firmi:\n" + "\n".join(firme))
 
-# /kontakt komanda – sada šalje nativni kontakt
+# /kontakt komanda – sada šalje nativni kontakt + lepu poruku
 async def kontakt(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not context.args:
         await update.message.reply_text("⚠️ Moraš uneti naziv firme. Na primer: /kontakt LogistikaPlus")
@@ -59,7 +59,14 @@ async def kontakt(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     break
 
     if kontakt:
-        # Slanje nativnog Telegram kontakta
+        # Lepo formatirana poruka sa emoji
+        info_msg = (
+            f"🏢 *{kontakt['ime']} {kontakt['prezime']}*\n"
+            f"📞 Telefon: `{kontakt['telefon']}`\n"
+            f"📍 Adresa: {kontakt['adresa']}"
+        )
+
+        # Slanje nativnog kontakta
         await context.bot.send_contact(
             chat_id=update.effective_chat.id,
             phone_number=kontakt["telefon"],
@@ -67,16 +74,20 @@ async def kontakt(update: Update, context: ContextTypes.DEFAULT_TYPE):
             last_name=kontakt["prezime"]
         )
 
-        # Ako postoji Google Maps link, šaljemo inline dugme
-        maps_link = kontakt.get("google_maps_link", "")
-        if maps_link.startswith("http://") or maps_link.startswith("https://"):
-            buttons = [[InlineKeyboardButton("🗺️ Lokacija", url=maps_link)]]
-            reply_markup = InlineKeyboardMarkup(buttons)
-            await update.message.reply_text("📍 Lokacija firme:", reply_markup=reply_markup)
+        # Inline dugmad
+        buttons = []
+        if kontakt.get("google_maps_link", "").startswith(("http://", "https://")):
+            buttons.append([InlineKeyboardButton("🗺️ Otvori lokaciju", url=kontakt["google_maps_link"])])
+
+        reply_markup = InlineKeyboardMarkup(buttons) if buttons else None
+
+        # Slanje dodatne poruke sa lepim formatom
+        await update.message.reply_text(info_msg, parse_mode="Markdown", reply_markup=reply_markup)
+
     else:
         await update.message.reply_text("❌ Nije pronađena firma pod tim imenom ili aliasom.")
 
-# Mali HTTP server (za hosting na Render-u ili sličnim servisima)
+# Mali HTTP server (za hosting)
 class KeepAliveHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         self.send_response(200)
